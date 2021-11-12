@@ -319,7 +319,7 @@ function findUnmet (obj, opts) {
       }
     })
 
-  var peerDeps = obj.peerDependencies = obj.peerDependencies || {}
+  var peerDeps = obj.peerDependencies = !opts.nopeer ? (obj.peerDependencies || {}) : {}
   Object.keys(peerDeps).forEach(function (d) {
     var dependency
 
