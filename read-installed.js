@@ -97,11 +97,8 @@ var path = require("path")
 var asyncMap = require("slide").asyncMap
 var semver = require("semver")
 var readJson = require("read-package-json")
-var url = require("url")
-var util = require("util")
-var extend = require("util-extend")
 
-var debug = require("debuglog")("read-installed")
+var debug = require("debug")("read-installed")
 
 var readdir = require("readdir-scoped-modules")
 
@@ -116,7 +113,7 @@ function readInstalled (folder, opts, cb) {
     cb = opts
     opts = {}
   } else {
-    opts = extend({}, opts)
+    opts = Object.assign({}, opts)
   }
 
   if (typeof opts.depth !== 'number')

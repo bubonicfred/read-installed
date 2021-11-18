@@ -11,7 +11,7 @@ test("extraneous detected", function(t) {
       dev: true
     },
     function (err, map) {
-      t.ifError(err, "read-installed made it")
+      t.error(err, "read-installed made it")
 
       t.notOk(map.dependencies.d.extraneous, "d is not extraneous, it's required by root")
       t.ok(map.dependencies.x.extraneous, "x is extraneous, it's only a dev dep of d")
