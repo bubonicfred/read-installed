@@ -3,7 +3,7 @@
 Read all the installed packages in a folder, and return a tree
 structure with all the data.
 
-It is a maintained fork of [read-packages]()
+It is a maintained fork of [read-installed](https://github.com/npm/read-installed)
 
 ## Usage
 
