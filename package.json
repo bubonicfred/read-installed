@@ -1,10 +1,10 @@
 {
-  "name": "read-installed",
+  "name": "read-installed-packages",
   "description": "Read all the installed packages in a folder, and return a tree structure with all the data.",
-  "version": "4.0.3",
+  "version": "1.0.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/npm/read-installed.git"
+    "url": "https://github.com/Semigradsky/read-installed.git"
   },
   "main": "read-installed.js",
   "scripts": {
@@ -23,7 +23,8 @@
   "optionalDependencies": {
     "graceful-fs": "^4.1.2"
   },
-  "author": "Isaac Z. Schlueter <i@izs.me> (http://blog.izs.me/)",
+  "author": "Dmitry Semigradsky <semigradskyd@gmail.com>",
+  "contributors": ["Isaac Z. Schlueter <i@izs.me> (http://blog.izs.me/)"],
   "license": "ISC",
   "devDependencies": {
     "mkdirp": "^1.0.4",
