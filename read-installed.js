@@ -100,7 +100,7 @@ var readJson = require("read-package-json")
 
 var debug = require("debug")("read-installed")
 
-var readdir = require("readdir-scoped-modules")
+var { readdirScoped } = require("@npmcli/fs")
 
 // Sentinel catch-all version constraint used when a dependency is not
 // listed in the package.json file.
@@ -147,12 +147,17 @@ function readInstalled_ (folder, parent, name, reqver, depth, opts, cb) {
     , link
     , realpathSeen = opts.realpathSeen
 
-  readdir(path.resolve(folder, "node_modules"), function (er, i) {
-    // error indicates that nothing is installed here
-    if (er) i = []
-    installed = i.filter(function (f) { return f.charAt(0) !== "." })
-    next()
-  })
+  readdirScoped(path.resolve(folder, "node_modules"))
+    .then(function (i) {
+      installed = i.filter(function (f) { return f.charAt(0) !== "." })
+    })
+    .catch(function () {
+      // error indicates that nothing is installed here
+      installed = []
+    })
+    .finally(function () {
+      next()
+    })
 
   readJson(path.resolve(folder, "package.json"), function (er, data) {
     obj = copy(data)
