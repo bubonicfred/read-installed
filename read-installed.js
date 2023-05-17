@@ -149,7 +149,9 @@ function readInstalled_ (folder, parent, name, reqver, depth, opts, cb) {
 
   readdirScoped(path.resolve(folder, "node_modules"))
     .then(function (i) {
-      installed = i.filter(function (f) { return f.charAt(0) !== "." })
+      installed = i
+        .filter(function (f) { return f.charAt(0) !== "." })
+        .map(function (f) { return f.replace(/\\/g, '/') })
     })
     .catch(function () {
       // error indicates that nothing is installed here
