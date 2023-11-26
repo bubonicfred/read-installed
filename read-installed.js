@@ -294,6 +294,8 @@ function resolveInheritance (obj, opts) {
 // find unmet deps by walking up the tree object.
 // No I/O
 function findUnmet (obj, opts) {
+  if (obj.length) return;
+
   var findUnmetSeen = opts.findUnmetSeen
   if (findUnmetSeen.indexOf(obj) !== -1) return
   findUnmetSeen.push(obj)
