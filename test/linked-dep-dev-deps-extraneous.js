@@ -1,25 +1,28 @@
-var test = require('tap').test
-var path = require('path')
-var fs = require('fs')
-var mkdirp = require('mkdirp')
-var rimraf = require('rimraf')
-var readInstalled = require('../')
+import readInstalled from "../read-installed.js";
+import { test } from 'tap';
+import { resolve } from 'path';
+import { writeFileSync, symlinkSync } from 'fs';
+import { sync } from 'mkdirp';
+import { sync as _sync } from 'rimraf';
+import { fileURLToPath } from 'url';
 
-var root = path.resolve(__dirname, 'root')
-var pkg = path.resolve(root, 'pkg')
-var pkgnm = path.resolve(pkg, 'node_modules')
-var linkdepSrc = path.resolve(root, 'linkdep')
-var linkdepLink = path.resolve(pkgnm, 'linkdep')
-var devdep = path.resolve(linkdepSrc, 'node_modules', 'devdep')
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
+
+const root = resolve(__dirname, 'root');
+const pkg = resolve(root, 'pkg');
+const pkgnm = resolve(pkg, 'node_modules');
+const linkdepSrc = resolve(root, 'linkdep');
+const linkdepLink = resolve(pkgnm, 'linkdep');
+const devdep = resolve(linkdepSrc, 'node_modules', 'devdep');
 
 function pjson (dir, data) {
-  mkdirp.sync(dir)
-  var d = path.resolve(dir, 'package.json')
-  fs.writeFileSync(d, JSON.stringify(data))
+  sync(dir)
+  const d = resolve(dir, 'package.json');
+  writeFileSync(d, JSON.stringify(data))
 }
 
 test('setup', function (t) {
-  rimraf.sync(root)
+  _sync(root)
   pjson(pkg, {
     name: 'root',
     version: '1.2.3',
@@ -39,21 +42,21 @@ test('setup', function (t) {
     version: '1.2.3'
   })
 
-  mkdirp.sync(pkgnm)
-  fs.symlinkSync(linkdepSrc, linkdepLink, 'dir')
+  sync(pkgnm)
+  symlinkSync(linkdepSrc, linkdepLink, 'dir')
 
   t.end()
 })
 
 test('basic', function (t) {
   readInstalled(pkg, { dev: true }, function (er, data) {
-    var dd = data.dependencies.linkdep.dependencies.devdep
+    const dd = data.dependencies.linkdep.dependencies.devdep;
     t.notOk(dd.extraneous, 'linked dev dep should not be extraneous')
     t.end()
   })
 })
 
 test('cleanup', function (t) {
-  rimraf.sync(root)
+  _sync(root)
   t.end()
 })
