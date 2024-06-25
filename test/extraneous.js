@@ -1,11 +1,12 @@
-var readInstalled = require('../read-installed.js')
-var test = require('tap').test
-var path = require('path')
-
+import readInstalled from '../read-installed.js';
+import { test } from 'tap';
+import { join } from 'path';
+import { fileURLToPath } from 'url';
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
 test('extraneous detected', function(t) {
   // This test verifies read-installed#16
   readInstalled(
-    path.join(__dirname, 'fixtures/extraneous-detected'),
+    join(__dirname, 'fixtures/extraneous-detected'),
     { log: console.error },
     function(err, map) {
       t.ok(map.dependencies.foo.extraneous, 'foo is extraneous, it\'s not required by any module')

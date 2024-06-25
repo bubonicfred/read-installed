@@ -87,26 +87,22 @@ as far as the left-most node_modules folder.
 
 */
 
-try {
-  var fs = require("graceful-fs")
-} catch (er) {
-  var fs = require("fs")
-}
+import { lstat, realpath } from "fs";
 
-var path = require("path")
-var asyncMap = require("slide").asyncMap
-var semver = require("semver")
-var readJson = require("read-package-json")
+import { resolve } from "path";
+import { asyncMap } from "slide";
+import { validRange, satisfies } from "semver";
+import readJson from "read-package-json";
+import newdebug from "debug";
+const debug = newdebug("read-installed");
 
-var debug = require("debug")("read-installed")
-
-var { readdirScoped } = require("@npmcli/fs")
+import { readdirScoped } from "@npmcli/fs";
 
 // Sentinel catch-all version constraint used when a dependency is not
 // listed in the package.json file.
-var ANY = {}
+const ANY = {};
 
-module.exports = readInstalled
+export default readInstalled
 
 function readInstalled (folder, opts, cb) {
   if (typeof opts === 'function') {
@@ -141,13 +137,13 @@ function readInstalled (folder, opts, cb) {
 }
 
 function readInstalled_ (folder, parent, name, reqver, depth, opts, cb) {
-  var installed
-    , obj
-    , real
-    , link
-    , realpathSeen = opts.realpathSeen
+  let installed;
+  let obj;
+  let real;
+  let link;
+  const realpathSeen = opts.realpathSeen;
 
-  readdirScoped(path.resolve(folder, "node_modules"))
+  readdirScoped(resolve(folder, "node_modules"))
     .then(function (i) {
       installed = i
         .filter(function (f) { return f.charAt(0) !== "." })
@@ -161,7 +157,7 @@ function readInstalled_ (folder, parent, name, reqver, depth, opts, cb) {
       next()
     })
 
-  readJson(path.resolve(folder, "package.json"), function (er, data) {
+  readJson(resolve(folder, "package.json"), function (er, data) {
     obj = copy(data)
 
     if (!parent) {
@@ -171,12 +167,12 @@ function readInstalled_ (folder, parent, name, reqver, depth, opts, cb) {
     return next(er)
   })
 
-  fs.lstat(folder, function (er, st) {
+  lstat(folder, function (er, st) {
     if (er) {
       if (!parent) real = true
       return next(er)
     }
-    fs.realpath(folder, function (er, rp) {
+    realpath(folder, function (er, rp) {
       debug("realpath(%j) = %j", folder, rp)
       real = rp
       if (st.isSymbolicLink()) link = rp
@@ -184,8 +180,8 @@ function readInstalled_ (folder, parent, name, reqver, depth, opts, cb) {
     })
   })
 
-  var errState = null
-    , called = false
+  var errState = null;
+  var called = false;
   function next (er) {
     if (errState) return
     if (er) {
@@ -217,8 +213,8 @@ function readInstalled_ (folder, parent, name, reqver, depth, opts, cb) {
 
     // "foo":"http://blah" and "foo":"latest" are always presumed valid
     if (reqver
-        && semver.validRange(reqver, true)
-        && !semver.satisfies(obj.version, reqver, true)) {
+        && validRange(reqver, true)
+        && !satisfies(obj.version, reqver, true)) {
       obj.invalid = true
     }
 
@@ -236,7 +232,7 @@ function readInstalled_ (folder, parent, name, reqver, depth, opts, cb) {
     obj.depth = depth
     //if (depth >= opts.depth) return cb(null, obj)
     asyncMap(installed, function (pkg, cb) {
-      var rv = obj.dependencies[pkg]
+      let rv = obj.dependencies[pkg];
       if (!rv && obj.devDependencies && opts.dev)
         rv = obj.devDependencies[pkg]
 
@@ -245,7 +241,7 @@ function readInstalled_ (folder, parent, name, reqver, depth, opts, cb) {
         return cb(null, obj)
       }
 
-      readInstalled_( path.resolve(folder, "node_modules/"+pkg)
+      readInstalled_( resolve(folder, `node_modules/${pkg}`)
                     , obj, pkg, obj.dependencies[pkg], depth + 1, opts
                     , cb )
 
@@ -296,26 +292,26 @@ function resolveInheritance (obj, opts) {
 function findUnmet (obj, opts) {
   if (obj.length) return;
 
-  var findUnmetSeen = opts.findUnmetSeen
+  const findUnmetSeen = opts.findUnmetSeen;
   if (findUnmetSeen.indexOf(obj) !== -1) return
   findUnmetSeen.push(obj)
   debug("find unmet parent=%s obj=", obj.parent && obj.parent.name, obj.name || obj)
-  var deps = obj.dependencies = obj.dependencies || {}
+  const deps = obj.dependencies = obj.dependencies || {};
 
   debug(deps)
   Object.keys(deps)
     .filter(function (d) { return typeof deps[d] === "string" })
     .forEach(function (d) {
-      var found = findDep(obj, d)
+      const found = findDep(obj, d);
       debug("finding dep %j", d, found && found.name || found)
       // "foo":"http://blah" and "foo":"latest" are always presumed valid
       if (typeof deps[d] === "string" &&
-          semver.validRange(deps[d], true) &&
+          validRange(deps[d], true) &&
           found &&
-          !semver.satisfies(found.version, deps[d], true)) {
+          !satisfies(found.version, deps[d], true)) {
         // the bad thing will happen
         opts.log( "unmet dependency"
-                , obj.path + " requires "+d+"@'"+deps[d]
+                , `${obj.path} requires ${d}@'${deps[d]}`
                 + "' but will load\n"
                 + found.path+",\nwhich is version "+found.version )
         found.invalid = true
@@ -325,29 +321,29 @@ function findUnmet (obj, opts) {
       }
     })
 
-  var peerDeps = obj.peerDependencies = !opts.nopeer ? (obj.peerDependencies || {}) : {}
+  const peerDeps = obj.peerDependencies = opts.nopeer ? {} : (obj.peerDependencies || {});
   Object.keys(peerDeps).forEach(function (d) {
-    var dependency
+    let dependency;
 
-    if (!obj.parent) {
+    if (obj.parent) {
+      let r = obj.parent;
+      while (r && !dependency) {
+        dependency = r.dependencies && r.dependencies[d]
+        r = r.link ? null : r.parent
+      }
+    } else {
       dependency = obj.dependencies[d]
 
       // read it as a missing dep
       if (!dependency) {
         obj.dependencies[d] = peerDeps[d]
       }
-    } else {
-      var r = obj.parent
-      while (r && !dependency) {
-        dependency = r.dependencies && r.dependencies[d]
-        r = r.link ? null : r.parent
-      }
     }
 
     if (!dependency) {
       // mark as a missing dep!
       obj.dependencies[d] = peerDeps[d]
-    } else if (!semver.satisfies(dependency.version, peerDeps[d], true)) {
+    } else if (!satisfies(dependency.version, peerDeps[d], true)) {
       dependency.peerInvalid = true
     }
   })
@@ -363,7 +359,7 @@ function unmarkExtraneous (obj, opts) {
 
   obj.extraneous = false
 
-  var deps = obj._dependencies || []
+  const deps = obj._dependencies || [];
   if (opts.dev && obj.devDependencies && (obj.root || obj.link)) {
     Object.keys(obj.devDependencies).forEach(function (k) {
       deps[k] = obj.devDependencies[k]
@@ -378,7 +374,7 @@ function unmarkExtraneous (obj, opts) {
 
   debug("not extraneous", obj._id, deps)
   Object.keys(deps).forEach(function (d) {
-    var dep = findDep(obj, d)
+    const dep = findDep(obj, d);
     if (dep && dep.extraneous) {
       unmarkExtraneous(dep, opts)
     }
@@ -388,8 +384,8 @@ function unmarkExtraneous (obj, opts) {
 // Find the one that will actually be loaded by require()
 // so we can make sure it's valid etc.
 function findDep (obj, d) {
-  var r = obj
-    , found = null
+  let r = obj;
+  let found = null;
   while (r && !found) {
     // if r is a valid choice, then use that.
     // kinda weird if a pkg depends on itself, but after the first
@@ -407,7 +403,7 @@ function copy (obj) {
   if (!obj || typeof obj !== 'object') return obj
   if (Array.isArray(obj)) return obj.map(copy)
 
-  var o = {}
-  for (var i in obj) o[i] = copy(obj[i])
+  const o = {};
+  for (const i in obj) o[i] = copy(obj[i])
   return o
 }
